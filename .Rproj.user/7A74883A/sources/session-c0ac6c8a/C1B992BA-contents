@@ -78,25 +78,25 @@ multi_result <- RunMultipleAnnotations(
 
 ### `AutoCellType` 函数 🛠️
 
-| 参数 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| input | data.frame | 必选 | 输入marker矩阵，需包含cluster/gene/avg_log2FC三列 |
-| annotation_level | character | 'major' | 注释粒度: 'major'(大类)/'subtype'(亚型) |
-| model | character | 必选 | 语言模型选择: 'gpt-4o'/'deepseek-v3'等 |
-| tissuename | character | 必选 | 组织类型描述，如"肺癌转移灶" |
-| cellname | character | NULL | 主细胞类型（亚型分析时必需），如"T细胞" |
-| topgenenumber | integer | 15 | 每个cluster使用的TOP基因数（推荐20-50） |
-| base_url | character | 必选 | API服务端地址 |
-| api_key | character | 必选 | API认证密钥 |
+| 参数             | 类型       | 默认值  | 说明                                              |
+| ---------------- | ---------- | ------- | ------------------------------------------------- |
+| input            | data.frame | 必选    | 输入marker矩阵，需包含cluster/gene/avg_log2FC三列 |
+| annotation_level | character  | 'major' | 注释粒度: 'major'(大类)/'subtype'(亚型)           |
+| model            | character  | 必选    | 语言模型选择: 'gpt-4o'/'deepseek-v3'等            |
+| tissuename       | character  | 必选    | 组织类型描述，如"肺癌转移灶"                      |
+| cellname         | character  | NULL    | 主细胞类型（亚型分析时必需），如"T细胞"           |
+| topgenenumber    | integer    | 15      | 每个cluster使用的TOP基因数（推荐20-50）           |
+| base_url         | character  | 必选    | API服务端地址                                     |
+| api_key          | character  | 必选    | API认证密钥                                       |
 
 ### `RunMultipleAnnotations` 函数 🔄
 
-| 新增参数 | 类型 | 默认值 | 说明 |
-|----------|------|--------|------|
-| models | character | 必选 | 模型列表，如c('gpt-4o','claude-3-sonnet') |
-| max_retries | integer | 3 | 单模型最大重试次数，建议3-5次 |
-| timeout | integer | 300 | 单次API调用超时时间（秒） |
-| parallel_workers | integer | 4 | 并行工作线程数（建议≤CPU核心数） |
+| 新增参数         | 类型      | 默认值 | 说明                                      |
+| ---------------- | --------- | ------ | ----------------------------------------- |
+| models           | character | 必选   | 模型列表，如c('gpt-4o','claude-3-sonnet') |
+| max_retries      | integer   | 3      | 单模型最大重试次数，建议3-5次             |
+| timeout          | integer   | 300    | 单次API调用超时时间（秒）                 |
+| parallel_workers | integer   | 4      | 并行工作线程数（建议≤CPU核心数）          |
 
 ## 🔍 结果解析
 
@@ -112,7 +112,7 @@ results %>%
               Confidence = max(table(Prediction))/n())
 ```
 
-![](https://wandering.oss-cn-hangzhou.aliyuncs.com/OB_Zotero/20250310115507.png)
+<img src="https://wandering.oss-cn-hangzhou.aliyuncs.com/OB_Zotero/20250310115507.png" width="600" alt="结果展示">
 
 ## 💡 使用技巧
 
@@ -121,6 +121,7 @@ results %>%
    - 精细亚型：30-50基因
 
 2. **模型选择策略** 🤖
+
 ```r
 # 推荐组合
 optimal_models <- c(
@@ -131,6 +132,7 @@ optimal_models <- c(
 ```
 
 3. **异常处理** ⚠️
+
 ```r
 tryCatch({
     result <- AutoCellType(...)
@@ -141,6 +143,7 @@ tryCatch({
 ```
 
 ## ❓ 常见问题
+
 - 降低并行数 `parallel_workers=2`
 - 启用指数退避重试 `backoff=TRUE`
 - 联系服务商提升配额
@@ -148,10 +151,12 @@ tryCatch({
 ## 📧 支持与联系
 
 遇到问题请提交issue或联系:
+
 - 项目主页 🏠: https://github.com/BioinfoXP/AutoCellType
 - 技术邮箱 📮: xp294053@163.com
 - 微信公众号 💬: 桑树下的胖蚕宝
 
 📱 扫码关注 📱
 
-![](https://wandering.oss-cn-hangzhou.aliyuncs.com/OB_Zotero/20250310115328.png)
+<img src="https://wandering.oss-cn-hangzhou.aliyuncs.com/OB_Zotero/20250310115328.png" width="200" height="200" alt="微信公众号二维码">
+
