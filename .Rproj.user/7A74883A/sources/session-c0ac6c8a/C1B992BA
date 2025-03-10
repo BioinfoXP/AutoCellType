@@ -1,27 +1,27 @@
 {
-    "id": "62D935E4",
+    "id": "C1B992BA",
     "path": "~/Rstudio/Project/AutoCellType/README.md",
     "project_path": "README.md",
-    "type": "r_source",
+    "type": "markdown",
     "hash": "0",
     "contents": "",
     "dirty": false,
-    "created": 1741576371900.0,
+    "created": 1741577953614.0,
     "source_on_save": false,
     "relative_order": 7,
     "properties": {
         "source_window_id": "",
         "Source": "Source",
         "tempName": "Untitled1",
-        "cursorPosition": "99,0",
-        "scrollLine": "0"
+        "cursorPosition": "193,0",
+        "scrollLine": "174"
     },
     "folds": "",
-    "lastKnownWriteTime": 1741576390,
+    "lastKnownWriteTime": 1741577960,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1741576390615,
+    "last_content_update": 1741577960705,
     "read_only": false,
     "read_only_alternatives": []
 }

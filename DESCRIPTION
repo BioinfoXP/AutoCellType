@@ -1,12 +1,47 @@
 Package: AutoCellType
 Type: Package
-Title: What the Package Does (Title Case)
-Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Title: Automatic Cell Type Annotation for Single-Cell Transcriptomics
+Version: 0.2.0
+Authors@R: 
+    c(person(given = "Peng", family = "Xia", 
+             email = "xp294053@163.com", 
+             role = c("cre", "aut")),
+      person(given = "LLM", family = "Collaborators",
+             role = "ctb"))
+Description: 
+    Implements automated cell type annotation for single-cell RNA-seq data
+    using multiple large language models (LLMs). Provides unified interface
+    for model integration, parallel processing, and consensus prediction.
+    Supports both major cell type classification and fine-grained subtype
+    identification through cross-model voting mechanism. Includes built-in
+    visualization tools for annotation validation.
+License: MIT + file LICENSE
+URL: https://github.com/BioinfoXP/AutoCellType
+BugReports: https://github.com/BioinfoXP/AutoCellType/issues
+Depends: 
+    R (>= 3.6.0)
+Imports:
+    dplyr,
+    httr,
+    jsonlite,
+    parallel,
+    future,
+    future.apply,
+    purrr,
+    tibble,
+    lubridate,
+    cli,
+    glue
+Suggests:
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown,
+    Seurat,
+    ggplot2,
+    patchwork
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.3.2
+VignetteBuilder: knitr
+SystemRequirements: 
+    Access to LLM APIs (OpenAI/DeepSeek/etc.)
