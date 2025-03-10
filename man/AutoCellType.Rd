@@ -11,7 +11,7 @@ AutoCellType(
   annotation_level = "major",
   custom_prompt = NULL,
   model = "gpt-4o",
-  topgenenumber = 10,
+  topgenenumber = 15,
   base_url = "https://api.gpt.ge/v1",
   api_key = NULL,
   timeout = 30,

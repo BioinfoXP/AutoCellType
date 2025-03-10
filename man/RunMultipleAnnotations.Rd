@@ -6,47 +6,28 @@
 \usage{
 RunMultipleAnnotations(
   input,
-  models,
-  topgenenumber = 15,
-  annotation_level = "subtype",
   tissuename = NULL,
   cellname = NULL,
+  annotation_level = "major",
   custom_prompt = NULL,
+  models = c("gpt-4o", "deepseek-v3"),
+  topgenenumber = 10,
   base_url = "https://api.gpt.ge/v1",
   api_key = NULL,
-  max_retries = 3,
-  timeout = 30
+  timeout = 30,
+  max_retries = 3
 )
 }
 \arguments{
-\item{input}{A data frame containing marker genes information or a list of gene vectors}
-
-\item{models}{A character vector of model names (e.g., 'claude-3-5-sonnet-latest', 'gpt-4o')}
-
-\item{topgenenumber}{Integer. Number of top genes to consider (default: 15)}
-
-\item{annotation_level}{Character. Level of annotation (default: 'subtype')}
-
-\item{tissuename}{Character. Description of tissue type}
-
-\item{cellname}{Optional character string specifying cell type for subtype annotation}
-
-\item{custom_prompt}{Optional custom prompt for models}
-
-\item{base_url}{Character. API base URL (default: "https://api.gpt.ge/v1")}
-
-\item{api_key}{Character. API key for authentication}
+\item{models}{Character vector of model names to use}
 
 \item{max_retries}{Integer. Maximum number of retry attempts (default: 3)}
-
-\item{timeout}{Integer. Timeout in seconds for each request (default: 30)}
 }
 \value{
-A combined tibble containing annotation results from all successful model runs
+A data.frame containing combined annotation results
 }
 \description{
-Performs cell type annotation using multiple language models with retry mechanism.
-If a model fails, it will automatically retry up to the specified number of times.
+Performs cell type annotation using multiple language models
 }
 \details{
 Run Cell Type Annotation with Multiple Models

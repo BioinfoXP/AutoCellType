@@ -61,42 +61,32 @@ graph2pdf(file = './output_figure/Figure4/Umap_Endo_seurat_clusters.pdf', width 
 
 
 
-
-VlnPlot(sce,c('VWF','PECAM1','ACTA2'))
-
-
 top_markers <- FindAllMarkers(sce, only.pos = TRUE,
                               min.pct = 0.8)
 
-
-library(openai)
-
-# 或直接设置环境变量（临时使用）
+load('../HCC_MVI_240827/output_data/Figure3/Myeloid_res1_markers.Rdata')
+library(AutoCellType)
 Sys.setenv(OPENAI_API_KEY = "sk-xUPLPAGssIjLrZ1H203919B5355a46619dB5F6997a78C418")
 Sys.setenv(OPENAI_API_BASE_URL = "https://api.gpt.ge/v1/")  # 如https://api.fe8.cn/v1
+results <- RunMultipleAnnotations(
+  input = markers,
+  tissuename = '肝癌',cellname = '髓系',
+  annotation_level = 'subtype',
+  # models = c('deepseek-v3'),
+  topgenenumber = 50,max_retries = 3,timeout = 300,
+  base_url = "https://api.gpt.ge/v1",
+  api_key = "sk-xUPLPAGssIjLrZ1H203919B5355a46619dB5F6997a78C418"
+)
 
 
-load('../HCC_MVI_240827/test.Rdata')
+
 result <- AutoCellType(
   input = markers,
   annotation_level = 'subtype',
   base_url = "https://api.gpt.ge/v1",
   api_key = "sk-xUPLPAGssIjLrZ1H203919B5355a46619dB5F6997a78C418",
-  tissuename = "肝癌",cellname = 't/nk',
+  tissuename = "肝癌",cellname = '髓系',
   model = 'deepseek-v3',
   topgenenumber = 30
 )
 
-
-
-results <- RunMultipleAnnotations(
-  input = markers,
-  tissuename = '肝癌',cellname = 't/nk',
-  annotation_level = 'subtype',
-  models = c('deepseek-v3','gpt-4o'),
-  topgenenumber = 50,max_retries = 3,timeout = 300,
-  base_url = "https://api.gpt.ge/v1",
-  api_key = "sk-xUPLPAGssIjLrZ1H203919B5355a46619dB5F6997a78C418"
-)
-results <- results %>% na.omit()
-table(results$Cluster,results$Prediction)
