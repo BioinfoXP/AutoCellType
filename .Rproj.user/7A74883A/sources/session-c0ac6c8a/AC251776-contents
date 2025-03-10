@@ -1,0 +1,133 @@
+
+
+
+#' Integrate Multiple Annotation Results
+#'
+#' This function aggregates results from multiple AutoCellType runs into a consolidated format with consensus prediction.
+#'
+#' @param ... Two or more result data.frames from AutoCellType function
+#' @param method Consensus method: "majority" (most frequent) or "latest" (last result)
+#'
+#' @return A data.frame with columns:
+#' \itemize{
+#'   \item \code{Cluster}: Cluster identifier
+#'   \item \code{Prediction_RunX}: Annotation results from each run
+#'   \item \code{Consensus}: Majority-vote consensus prediction
+#'   \item \code{Confidence}: Consensus confidence percentage
+#'   \item \code{Run_Count}: Number of successful annotations
+#' }
+#' @examples
+#' \dontrun{
+#' result1 <- AutoCellType(data1)
+#' result2 <- AutoCellType(data2)
+#' integrated <- IntegrateAnnotations(result1, result2)
+#' }
+#' @export
+IntegrateAnnotations <- function(..., method = "majority") {
+  # Input validation
+  results <- list(...)
+  if (length(results) < 2) stop("Requires at least two result sets")
+
+  # Process each result
+  processed <- lapply(seq_along(results), function(i) {
+    res <- results[[i]]
+    if (!all(c("Cluster", "Prediction") %in% colnames(res))) {
+      stop(glue::glue("Invalid input format in result set {i}"))
+    }
+    res %>%
+      dplyr::select(Cluster, Prediction) %>%
+      stats::setNames(c("Cluster", glue::glue("Prediction_Run{i}")))
+  })
+
+  # Merge results
+  merged <- Reduce(
+    function(x, y) dplyr::full_join(x, y, by = "Cluster", multiple = "all"),
+    processed
+  )
+
+  # Calculate consensus
+  merged <- merged %>%
+    dplyr::rowwise() %>%
+    dplyr::mutate(
+      Valid_Predictions = list(na.omit(dplyr::c_across(dplyr::starts_with("Prediction")))),
+      Run_Count = length(Valid_Predictions),
+      Consensus = if (Run_Count == 0) {
+        NA_character_
+      } else if (method == "majority") {
+        tbl <- table(unlist(Valid_Predictions))
+        names(tbl)[which.max(tbl)]
+      } else if (method == "latest") {
+        tail(Valid_Predictions, 1)
+      },
+      Confidence = if (Run_Count == 0) {
+        NA_real_
+      } else {
+        max(table(unlist(Valid_Predictions))) / Run_Count * 100
+      }
+    ) %>%
+    dplyr::select(-Valid_Predictions) %>%
+    dplyr::ungroup()
+
+  return(as.data.frame(merged))
+}
+
+
+
+
+
+
+
+
+
+
+
+#' Run Multiple Annotation Configurations with AutoCellType
+#'
+#' Execute AutoCellType with different parameter configurations and automatically integrate results.
+#'
+#' @param input Same as AutoCellType input
+#' @param params_list List of parameter sets (each set must be a named list)
+#' @param ... Common parameters shared by all runs (e.g. tissuename)
+#'
+#' @return Output of IntegrateAnnotations
+#'
+#' @examples
+#' \dontrun{
+#' results <- RunMultipleAnnotations(
+#'   input = sc_data,
+#'   params_list = list(
+#'     list(model = "gpt-4o"),
+#'     list(model = "gpt-4-turbo", topgenenumber = 15),
+#'     list(annotation_level = "subtype")
+#'   ),
+#'   tissuename = "human immune cells"
+#' )
+#' }
+#' @export
+RunMultipleAnnotations <- function(input, params_list, ...) {
+  # 参数验证
+  if (!inherits(params_list, "list")) stop("params_list must be a list of parameter sets")
+  if (any(sapply(params_list, function(x) !is.null(names(x))))) {
+    stop("Each parameter set in params_list must be a named list")
+  }
+
+  # 获取共享参数
+  common_args <- list(...)
+
+  # 并行安全执行
+  safe_run <- purrr::safely(function(param_set) {
+    do.call(AutoCellType, c(list(input = input), param_set, common_args))
+  })
+
+  # 执行所有参数配置
+  all_results <- lapply(params_list, function(param) {
+    res <- safe_run(param)
+    if (!is.null(res$result)) return(res$result)
+    warning("Failed run with parameters: ", paste(names(param), param, sep = "=", collapse = ", "))
+    return(NULL)
+  }) %>% purrr::compact()
+
+  # 生成整合结果
+  if (length(all_results) < 1) stop("No successful runs to integrate")
+  do.call(IntegrateAnnotations, all_results)
+}

@@ -1,0 +1,102 @@
+# 2025.03.02
+# PengXia
+
+# Clear workspace and garbage collection
+rm(list = ls())
+gc()
+
+# Load required libraries
+suppressPackageStartupMessages({
+  library(Seurat)        # Single-cell analysis toolkit
+  library(data.table)    # Efficient data manipulation
+  library(tidyverse)     # Data cleaning and visualization
+  library(parallel)      # Parallel computing
+  library(qs)            # Fast serialization
+  library(easySingleCell)
+  library(export)
+  library(ggplot2)
+  library(scRNAtoolVis)
+  library(TheBestColors) # Custom color palettes
+  library(patchwork)     # Plot combining
+})
+
+# Define custom color palette
+pal <- c(Best100(2), Best100(3), Best100(4))
+
+# ============== 1. 读取数据 ======================
+sce1 <- qread('./output_data/Figure1/sce.anno.qs')
+
+# ============== 2. 内皮子集分析和聚类 ======================
+sce <- subset(sce1, celltype == 'Endothelial')
+sce <- run_normalize(sce, dims = 1:15)
+ElbowPlot(sce)
+
+# Run clustree to determine optimal resolution
+res <- run_clustree(sce, 
+                    data_output_dir = './output_data/Figure4/',
+                    figure_output_dir = './output_figure/Figure4/',
+                    data_output_filename = "Endo_resolution_data.Rdata",
+                    figure_output_filename = "Endo_clustree_plot.pdf")
+
+# Find clusters at resolution = 0.2
+sce <- FindClusters(sce, resolution = 0.2)
+
+# Visualize clusters
+DimPlot(
+  sce,
+  group.by = "seurat_clusters",
+  label = TRUE,repel = T,
+  pt.size = 0.8
+) +
+  ggtitle("Seurat Clusters") +
+  theme(
+    legend.key.size = unit(0.4, "cm"),
+    plot.title = element_text(face = "bold.italic")
+  ) +
+  scale_color_manual(
+    values = colorRampPalette(RColorBrewer::brewer.pal(9, "Set1"))(nlevels(sce$celltype)),
+    guide = guide_legend(override.aes = list(size = 3))
+  )
+graph2pdf(file = './output_figure/Figure4/Umap_Endo_seurat_clusters.pdf', width = 5, height = 4)
+
+
+
+
+VlnPlot(sce,c('VWF','PECAM1','ACTA2'))
+
+
+top_markers <- FindAllMarkers(sce, only.pos = TRUE,
+                              min.pct = 0.8)
+
+
+library(openai)
+
+# 或直接设置环境变量（临时使用）
+Sys.setenv(OPENAI_API_KEY = "sk-xUPLPAGssIjLrZ1H203919B5355a46619dB5F6997a78C418")
+Sys.setenv(OPENAI_API_BASE_URL = "https://api.gpt.ge/v1/")  # 如https://api.fe8.cn/v1
+
+
+load('../HCC_MVI_240827/test.Rdata')
+result <- AutoCellType(
+  input = markers,
+  annotation_level = 'subtype',
+  base_url = "https://api.gpt.ge/v1",
+  api_key = "sk-xUPLPAGssIjLrZ1H203919B5355a46619dB5F6997a78C418",
+  tissuename = "肝癌",cellname = 't/nk',
+  model = 'deepseek-v3',
+  topgenenumber = 30
+)
+
+
+
+results <- RunMultipleAnnotations(
+  input = markers,
+  tissuename = '肝癌',cellname = 't/nk',
+  annotation_level = 'subtype',
+  models = c('deepseek-v3','gpt-4o'),
+  topgenenumber = 50,max_retries = 3,timeout = 300,
+  base_url = "https://api.gpt.ge/v1",
+  api_key = "sk-xUPLPAGssIjLrZ1H203919B5355a46619dB5F6997a78C418"
+)
+results <- results %>% na.omit()
+table(results$Cluster,results$Prediction)

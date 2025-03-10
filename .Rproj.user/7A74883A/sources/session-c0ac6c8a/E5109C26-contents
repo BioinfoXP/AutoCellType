@@ -1,0 +1,81 @@
+RunMultipleAnnotations <- function(input, 
+                                   models,
+                                   topgenenumber = 15,
+                                   annotation_level = 'subtype',
+                                   tissuename = "endothelial subtype in human HCC",
+                                   base_url = "https://api.gpt.ge/v1",
+                                   api_key = NULL,
+                                   max_retries = 3) {  # 添加最大重试次数参数
+  
+  # 参数验证
+  if(is.null(input)) stop("Input data cannot be null")
+  if(length(models) == 0) stop("No models specified")
+  if(is.null(api_key)) stop("API key is required")
+  if(topgenenumber < 1) stop("topgenenumber must be positive")
+  
+  # 加载必要的包
+  required_packages <- c("future", "future.apply", "dplyr", "magrittr")
+  for(pkg in required_packages) {
+    if(!requireNamespace(pkg, quietly = TRUE)) {
+      install.packages(pkg)
+    }
+    library(pkg, character.only = TRUE)
+  }
+  
+  # 设置并行计算
+  plan(multisession)
+  
+  # 定义单个模型运行函数，包含重试逻辑
+  run_single_model <- function(model, retry_count = 0) {
+    tryCatch({
+      result <- AutoCellType::AutoCellType(
+        input = input,
+        annotation_level = annotation_level,
+        base_url = base_url,
+        api_key = api_key,
+        tissuename = tissuename,
+        model = model,
+        topgenenumber = topgenenumber
+      )
+      
+      # 添加模型信息列
+      result$model <- model
+      return(result)
+      
+    }, error = function(e) {
+      if(retry_count < max_retries) {
+        warning(sprintf("Attempt %d failed for model %s: %s. Retrying...", 
+                        retry_count + 1, model, e$message))
+        # 递归重试
+        Sys.sleep(2)  # 添加短暂延迟，避免立即重试
+        return(run_single_model(model, retry_count + 1))
+      } else {
+        warning(sprintf("All %d attempts failed for model %s: %s", 
+                        max_retries, model, e$message))
+        return(NULL)
+      }
+    })
+  }
+  
+  # 运行多个模型
+  results <- lapply(models, function(model) {
+    run_single_model(model)
+  })
+  
+  # 移除NULL结果并合并数据框
+  results <- do.call(rbind, Filter(Negate(is.null), results))
+  
+  return(results)
+}
+
+
+
+# 使用示例
+results <- RunMultipleAnnotations(
+  input = markers,
+  # tissuename = 'endothelial',
+  annotation_level = 'subtype',
+  models = c('claude-3-5-sonnet-latest', 'gpt-4o','deepseek-v3'),
+  topgenenumber = 20,base_url = "https://api.gpt.ge/v1",
+  api_key = "sk-xUPLPAGssIjLrZ1H203919B5355a46619dB5F6997a78C418"
+)
