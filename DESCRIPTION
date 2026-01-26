@@ -1,7 +1,7 @@
 Package: AutoCellType
 Type: Package
 Title: Automatic Cell Type Annotation for Single-Cell Transcriptomics
-Version: 0.2.0
+Version: 0.3.0
 Authors@R: 
     c(person(given = "Peng", family = "Xia", 
              email = "xp294053@163.com", 

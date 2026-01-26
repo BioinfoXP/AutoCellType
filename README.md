@@ -1,162 +1,127 @@
-# AutoCellType - 单细胞转录组多模态智能注释工具包 🧬
+# AutoCellType - 专家级单细胞多模态智能注释引擎 🧬
 
-![](https://img.shields.io/badge/R-4.2%2B-blue)
-![](https://img.shields.io/badge/License-MIT-green)
+**AutoCellType** 是一个为解决单细胞注释“可解释性”与“鲁棒性”而生的生产级工具包。
 
-AutoCellType是一个创新的单细胞转录组数据分析工具包，通过整合多个大语言模型(LLMs)的能力，为单细胞转录组数据提供智能化的细胞类型注释解决方案。该工具支持多种主流LLM模型的并行调用，可以根据不同注释场景灵活选择注释策略，显著提升注释的准确性和可靠性。
+传统的 LLM 注释工具往往采用“批处理”模式（将所有 Cluster 塞进一个 Prompt），这导致了严重的**注意力稀释（Attention Dilution）和位置偏见（Lost-in-the-Middle）**。AutoCellType 重构了底层交互逻辑，通过 **Single-Shot 并行架构** 与 **Chain-of-Thought（思维链）** 协议，将 AI 从“模式匹配机器”升级为具备溯源能力的“生物学推理引擎”。
 
-## ✨ 核心优势
+---
 
-- **多模型智能集成** 🤖: 支持同时调用多个LLM模型(如GPT-4、Claude、DeepSeek等)进行注释，充分利用不同模型的优势
-- **灵活的注释粒度** 🎯: 支持major type到subtype的多层次注释，满足不同精细程度的分析需求
-- **高度可配置** ⚙️: 可自定义API参数、重试策略、超时设置等，适应不同的使用场景
-- **并行处理** ⚡: 采用并行计算架构，提高多模型场景下的注释效率
+## 🧠 深度架构解析
 
-## 📦 安装指南
+### 1. 注意力隔离架构 (Attention Isolation Architecture) 🎯
+
+大模型在处理长文本时存在“注意力衰减”。当数十个细胞簇挤在一个请求中时，模型倾向于忽略中间的数据或产生幻觉。
+
+* **解决方案**：AutoCellType 强制执行 **Single-Shot 策略**。每个细胞簇都在独立的线程中运行，拥有完整的 Context Window。
+* **深度意义**：这不仅消除了“漏标”，更重要的是确保了模型对每个 Cluster 的 Marker 基因组进行**全权重（Full-Attention）**的扫描与分析，捕捉低表达但具有特异性的关键基因（如转录因子）。
+
+### 2. 溯源式逻辑推演 (Abductive Reasoning Protocol) 🔍
+
+我们拒绝“黑盒”式的标签输出。生物学结论必须建立在证据之上。
+
+* **强制结构化推理**：通过严格的 JSON Schema，强制 LLM 在给出 `primary_lineage` 之前，必须先填写 `reasoning` 字段。
+* **深度意义**：这迫使模型模拟生物学家的思维路径——先识别 Marker（如 *CD3D, CD8A*），再关联功能（*Cytotoxic*），最后推导结论（*CD8+ T cell*）。这种**“先思考，后回答”**的机制显著降低了幻觉率。
+
+### 3. 语义熵减仲裁 (Semantic Entropy Reduction) ⚖️
+
+多模型的一致性不仅仅是字符串匹配。`T-cell` 和 `T lymphocyte` 是字符串冲突，却是生物学共识。
+
+* **LLM 仲裁器**：引入高阶模型作为 Arbiter，在语义空间而非字符空间评估一致性。
+* **深度意义**：仲裁员不仅解决同义词问题，还能评估**证据信噪比**。当模型 A 基于高特异性 Marker 给出结论，而模型 B 基于泛 Marker 给出结论时，仲裁员会基于 `reasoning` 的质量进行加权裁决，而非简单的“少数服从多数”。
+
+### 4. 自愈式工程底座 (Self-Healing Infrastructure) 🛡️
+
+针对 LLM API 的不确定性，构建了容错层。
+
+* **JSON 显微外科**：当 API 因 Token 限制截断输出时，内置解析器能识别破损的 JSON 结构（如未闭合的括号/引号）并自动进行语法修复，挽救宝贵的推理结果。
+* **智能熔断**：自动区分“瞬时网络波动”（执行指数退避重试）与“致命请求错误”（如 400 Bad Request，立即熔断），大幅提升大规模任务的执行效率。
+
+---
+
+## 📦 安装
 
 ```r
+# 1. 安装 OpenAI API 接口封装
 remotes::install_github("irudnyts/openai", ref = "r6")
+
+# 2. 安装 AutoCellType 核心包
 devtools::install_github("BioinfoXP/AutoCellType")
+
 ```
 
-### 🔧 依赖安装
+---
 
-```r
-# CRAN依赖
-install.packages(c("dplyr", "purrr", "tibble", "parallel", "httr", "jsonlite",
-                  "future", "future.apply", "lubridate", "ggplot2"))
+## 🚀 深度应用工作流
 
-# Bioconductor依赖
-if (!require("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
-BiocManager::install("Seurat")
-```
+### Phase 1: 注入先验知识的推理 (Informed Reasoning)
 
-## 🚀 快速入门
-
-### 1. 配置API密钥(兼容openai调用方式即可) 🔑
-
-```r
-Sys.setenv(OPENAI_API_KEY = "sk-your-key-here")       # API密钥
-Sys.setenv(OPENAI_API_BASE_URL = "https://api.gpt.ge/v1")  # 服务端点
-```
-
-### 2. 基础注释（单模型调用） 📝
+不同于盲注，AutoCellType 允许你将实验背景（Context）注入推理过程。
 
 ```r
 library(AutoCellType)
 
-# 载入示例数据集
-data(sample_markers)
+# 配置环境
+Sys.setenv(OPENAI_API_KEY = "sk-...", OPENAI_API_BASE_URL = "https://api.gpt.ge/v1")
 
-# 单模型注释
-basic_result <- AutoCellType(
-    input = sample_markers,
-    annotation_level = 'subtype',
-    tissuename = "肝癌微环境",
-    cellname = 'T细胞',
-    model = 'deepseek-v3'
+# 运行推理引擎
+# prior_info 是提升准确率的关键：它为模型划定了推理的边界条件
+res <- AutoCellType(
+    input = degs_df, 
+    tissuename = "人肝癌微环境 (HCC)",
+    
+    # [深度技巧]：注入上游分析线索
+    prior_info = "该数据来自 CD45+ 免疫细胞分选；SingleR 初步提示包含大量髓系细胞；请重点区分肿瘤相关巨噬细胞 (TAM) 的亚型。",
+    
+    n_cores = 8,          # 算力换时间：8线程并行
+    model = "gpt-4o-mini" # 高效推理模型
 )
+
 ```
 
-### 3. 多模型集成注释 🔄
+### Phase 2: 多视角的对抗与共识 (Adversarial Consensus)
+
+利用不同模型的训练偏差进行交叉验证，并通过仲裁器收敛结论。
 
 ```r
-# 并行多模型注释
-multi_result <- RunMultipleAnnotations(
-    input = sample_markers,
-    models = c('gpt-4o', 'deepseek-v3'),
-    tissuename = "肝细胞癌组织",
-    cellname = '内皮细胞',
-    topgenenumber = 40,
-    max_retries = 5,
-    timeout = 600
+# 1. 引入"第二意见" (Second Opinion)
+# 使用 deepseek-chat 作为对比模型，利用其不同的训练语料库
+res_multi <- RunMultipleAnnotations(
+    input = degs_df,
+    models = c("gpt-4o-mini", "deepseek-chat"),
+    tissuename = "人肝癌微环境",
+    n_cores = 4
 )
-```
 
-## 📚 核心函数详解
-
-### `AutoCellType` 函数 🛠️
-
-| 参数             | 类型       | 默认值  | 说明                                              |
-| ---------------- | ---------- | ------- | ------------------------------------------------- |
-| input            | data.frame | 必选    | 输入marker矩阵，需包含cluster/gene/avg_log2FC三列 |
-| annotation_level | character  | 'major' | 注释粒度: 'major'(大类)/'subtype'(亚型)           |
-| model            | character  | 必选    | 语言模型选择: 'gpt-4o'/'deepseek-v3'等            |
-| tissuename       | character  | 必选    | 组织类型描述，如"肺癌转移灶"                      |
-| cellname         | character  | NULL    | 主细胞类型（亚型分析时必需），如"T细胞"           |
-| topgenenumber    | integer    | 15      | 每个cluster使用的TOP基因数（推荐20-50）           |
-| base_url         | character  | 必选    | API服务端地址                                     |
-| api_key          | character  | 必选    | API认证密钥                                       |
-
-### `RunMultipleAnnotations` 函数 🔄
-
-| 新增参数         | 类型      | 默认值 | 说明                                      |
-| ---------------- | --------- | ------ | ----------------------------------------- |
-| models           | character | 必选   | 模型列表，如c('gpt-4o','claude-3-sonnet') |
-| max_retries      | integer   | 3      | 单模型最大重试次数，建议3-5次             |
-| timeout          | integer   | 300    | 单次API调用超时时间（秒）                 |
-| parallel_workers | integer   | 4      | 并行工作线程数（建议≤CPU核心数）          |
-
-## 🔍 结果解析
-
-```r
-# 查看简洁结果
-head(results[, c("Cluster", "Prediction", "Model")])
-
-# 结果统计
-library(dplyr)
-results %>%
-    group_by(Cluster, Model) %>%
-    summarise(Dominant_Type = names(which.max(table(Prediction))),
-              Confidence = max(table(Prediction))/n())
-```
-
-<img src="https://wandering.oss-cn-hangzhou.aliyuncs.com/OB_Zotero/20250310115507.png" width="600" alt="结果展示">
-
-## 💡 使用技巧
-
-1. **基因数量选择** 📊
-   - 大类注释：15-30基因
-   - 精细亚型：30-50基因
-
-2. **模型选择策略** 🤖
-
-```r
-# 推荐组合
-optimal_models <- c(
-    'claude-3-sonnet',  # 生物医学文献强项
-    'gpt-4-turbo',      # 综合推理能力强
-    'deepseek-v3'       # 中文支持优异
+# 2. 启动仲裁庭 (The Tribunal)
+# 使用推理能力最强的 gpt-4o 作为法官，审阅上述模型的证据链
+final_consensus <- AssessModelConsensus(
+    res_multi, 
+    arbiter_model = "gpt-4o"
 )
+
 ```
 
-3. **异常处理** ⚠️
+---
 
-```r
-tryCatch({
-    result <- AutoCellType(...)
-}, error = function(e) {
-    message("遇到API错误: ", e$message)
-    saveRDS(markers, "backup_markers.rds")  # 自动保存当前进度
-})
-```
+## 📊 结果解读：从数据到洞察
 
-## ❓ 常见问题
+`AssessModelConsensus` 输出的不仅是结果，更是一份**质量诊断报告**。
 
-- 降低并行数 `parallel_workers=2`
-- 启用指数退避重试 `backoff=TRUE`
-- 联系服务商提升配额
+| 状态 (Status) | 深度解读 | 建议操作 |
+| --- | --- | --- |
+| **Perfect Consensus** | **全息一致**。所有模型在语义和证据上均达成共识。 | ✅ 直接采信，无需复核。 |
+| **Arbiter Adjusted** | **语义对齐**。模型间存在命名习惯差异（如 *NK cells* vs *Natural Killer cells*），仲裁员已将其统一。 | ✅ 采信仲裁结果。 |
+| **Lineage Conflict** | **谱系冲突**。模型 A 认为是上皮，模型 B 认为是基质。通常暗示该簇包含双克隆（Doublets）或低质量细胞。 | ⚠️ 需回溯原始数据检查 QC 指标。 |
+| **Subtype Ambiguity** | **亚型模糊**。大类一致，但对功能状态（如 *Exhausted* vs *Activated*）有分歧。这反映了生物学状态的连续性。 | 🔬 建议关注 `reasoning` 列中的通路证据。 |
 
-## 📧 支持与联系
+---
 
-遇到问题请提交issue或联系:
+## 📧 社区与支持
 
-- 项目主页 🏠: https://github.com/BioinfoXP/AutoCellType
-- 技术邮箱 📮: xp294053@163.com
-- 微信公众号 💬: 桑树下的胖蚕宝
+AutoCellType 致力于将**可解释 AI (XAI)** 引入单细胞分析领域。
 
-📱 扫码关注 📱
+* **GitHub**: [BioinfoXP/AutoCellType](https://github.com/BioinfoXP/AutoCellType)
+* **Email**: xp294053@163.com
+* **公众号**: 桑树下的胖蚕宝
 
-<img src="https://wandering.oss-cn-hangzhou.aliyuncs.com/OB_Zotero/20250310115328.png" width="200" height="200" alt="微信公众号二维码">
-
+*“In God we trust, all others must bring data (and reasoning).”*
