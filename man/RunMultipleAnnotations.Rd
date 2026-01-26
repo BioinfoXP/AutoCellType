@@ -2,33 +2,23 @@
 % Please edit documentation in R/MultiAuto.R
 \name{RunMultipleAnnotations}
 \alias{RunMultipleAnnotations}
-\title{RunMultipleAnnotations}
+\title{Run Annotation with Multiple Models}
 \usage{
-RunMultipleAnnotations(
-  input,
-  tissuename = NULL,
-  cellname = NULL,
-  annotation_level = "major",
-  custom_prompt = NULL,
-  models = c("gpt-4o", "deepseek-v3"),
-  topgenenumber = 10,
-  base_url = "https://api.gpt.ge/v1",
-  api_key = NULL,
-  timeout = 30,
-  max_retries = 3
-)
+RunMultipleAnnotations(input, models = c("gpt-4o", "gpt-4o-mini"), ...)
 }
 \arguments{
-\item{models}{Character vector of model names to use}
+\item{input}{**Required**. The input marker data. Supports two formats:
+\itemize{
+  \item \strong{Data Frame}: Output from Seurat's \code{FindAllMarkers()}. Must contain \code{cluster} and \code{gene} (or rownames) columns, plus \code{avg_log2FC} (or \code{avg_logFC}).
+  \item \strong{List}: A named list of marker vectors, e.g., \code{list("Cluster0" = c("GeneA", "GeneB"), ...)}.
+}}
 
-\item{max_retries}{Integer. Maximum number of retry attempts (default: 3)}
+\item{models}{Character vector of model names.}
 }
 \value{
-A data.frame containing combined annotation results
+A combined tibble.
 }
 \description{
-Performs cell type annotation using multiple language models
-}
-\details{
-Run Cell Type Annotation with Multiple Models
+Wrapper to run `AutoCellType` using multiple models.
+Gracefully handles fatal model errors (e.g. 400 Bad Request) without stopping the whole process.
 }

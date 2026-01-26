@@ -6,48 +6,124 @@
 \usage{
 AutoCellType(
   input,
-  tissuename = NULL,
-  cellname = NULL,
-  annotation_level = "major",
-  custom_prompt = NULL,
-  model = "gpt-4o",
-  topgenenumber = 15,
+  tissuename,
+  cell_ontology = NULL,
+  prior_info = NULL,
+  n_cores = 1,
+  model = "gpt-4o-mini",
+  topgenenumber = 20,
+  p_val_thresh = 0.05,
   base_url = "https://api.gpt.ge/v1",
   api_key = NULL,
-  timeout = 30,
-  retries = 3
+  retries = 3,
+  verbose = TRUE
 )
 }
 \arguments{
-\item{input}{A differential expression matrix (data.frame) with columns 'cluster', 'gene' and 'avg_log2FC',
-or a predefined list of gene vectors.}
+\item{input}{**Required**. The input marker data. Supports two formats:
+\itemize{
+  \item \strong{Data Frame}: Output from Seurat's \code{FindAllMarkers()}. Must contain \code{cluster} and \code{gene} (or rownames) columns, plus \code{avg_log2FC} (or \code{avg_logFC}).
+  \item \strong{List}: A named list of marker vectors, e.g., \code{list("Cluster0" = c("GeneA", "GeneB"), ...)}.
+}}
 
-\item{tissuename}{Character string specifying tissue type.}
+\item{tissuename}{**Character**. The tissue of origin (e.g., "Human Liver", "Mouse Brain"). Serves as the primary biological context.}
 
-\item{cellname}{Optional character string specifying cell type for subtype annotation.}
+\item{cell_ontology}{**Constraint Mode**. Controls the standardization of the 'primary_lineage' field:
+\itemize{
+  \item \code{NULL} (Default): Uses the built-in **Universal Ontology** (~40 types).
+  \item \code{Character Vector}: **Recommended for Sub-clustering**. A user-defined list of allowed subtypes.
+}}
 
-\item{annotation_level}{Level of annotation: "major" or "subtype" (default: "major").}
+\item{prior_info}{**Character** (Optional). External biological context. E.g., "T cell sub-clustering".}
 
-\item{custom_prompt}{Optional custom prompt for GPT model.}
+\item{n_cores}{**Integer**. Number of parallel threads.
+\itemize{
+  \item \code{1} (Default): Sequential processing (safest for debugging).
+  \item \code{>1}: Parallel processing (Recommended: 4-8). Requires high API rate limits.
+}}
 
-\item{model}{Model name (default: "gpt-4o").}
+\item{model}{**Character**. LLM model name. Default \code{"gpt-4o-mini"}. \code{"gpt-4o"} is recommended for sub-clustering.}
 
-\item{topgenenumber}{Number of top marker genes per cluster (default: 10).}
+\item{topgenenumber}{**Integer**. The number of top markers (sorted by LogFC) to send per cluster. Default: 20.}
 
-\item{base_url}{API endpoint URL.}
+\item{p_val_thresh}{**Numeric**. Significance threshold. Default: 0.05.}
 
-\item{api_key}{API key.}
+\item{base_url}{**Character**. API endpoint. Default: "https://api.gpt.ge/v1".}
 
-\item{timeout}{Network timeout in seconds (default: 30).}
+\item{api_key}{**Character**. OpenAI-compatible API Key. Defaults to \code{Sys.getenv("OPENAI_API_KEY")}.}
 
-\item{retries}{Maximum retry attempts (default: 3).}
+\item{retries}{**Integer**. Max retry attempts per cluster. Default: 3.}
+
+\item{verbose}{**Logical**. Print progress bar. Default: \code{TRUE}.}
 }
 \value{
-A tibble with columns: Cluster, Prediction, Annotation_Level, Status
+A \code{tibble} containing standardized columns: \code{cluster_id}, \code{primary_lineage}, \code{detailed_subtype}, \code{functional_state}, \code{confidence}, \code{reasoning}.
 }
 \description{
-Leverages GPT models to annotate cell clusters based on marker genes.
+A high-precision, parallelized single-cell annotation engine.
+
+**Critical Updates (v7.2)**:
+1. **Single-Shot Strategy**: Processes clusters strictly one-by-one. Eliminates "Model Laziness" (skipping clusters).
+2. **Smart Error Handling**: Instantly catches fatal errors (HTTP 400/Model Not Found) to stop useless retries.
+3. **JSON Auto-Repair**: Fixes "Premature EOF" by automatically closing broken JSON strings.
+4. **Zero-NA Guarantee**: Strictly enforces no NA values in subtypes by filling with lineage info.
 }
-\details{
-Automated Cell Type Annotation with GPT Models
+\examples{
+\dontrun{
+  # =========================================================================
+  # Example 1: Standard Annotation (Sequential)
+  # =========================================================================
+  library(dplyr)
+
+  # 1. Create Mock Seurat Output
+  # Cluster 0: T cells (CD3D, CD8A)
+  # Cluster 1: B cells (MS4A1, CD79A)
+  # Cluster 2: Fibroblasts (COL1A1, DCN)
+  mock_markers <- data.frame(
+    cluster = c(rep("0", 3), rep("1", 3), rep("2", 3)),
+    gene = c("CD3D", "CD8A", "GZMK",      # C0
+             "MS4A1", "CD79A", "CD19",    # C1
+             "COL1A1", "DCN", "PDGFRA"),  # C2
+    avg_log2FC = c(2.5, 2.3, 1.8, 2.4, 2.2, 2.0, 3.1, 2.8, 2.5),
+    p_val_adj = rep(0.001, 9)
+  )
+
+  # 2. Run
+  res <- AutoCellType(
+    input = mock_markers,
+    tissuename = "Human PBMC",
+    n_cores = 1, # Sequential
+    api_key = "sk-..."
+  )
+  print(res)
+
+  # =========================================================================
+  # Example 2: High-Performance Parallel Mode
+  # =========================================================================
+  # If you have 20+ clusters, use n_cores = 4 or 8 to speed up by 4x-8x.
+
+  res_parallel <- AutoCellType(
+    input = mock_markers,
+    tissuename = "Human Tissue",
+    n_cores = 4, # Use 4 threads
+    model = "gpt-4o-mini",
+    api_key = "sk-..."
+  )
+
+  # =========================================================================
+  # Example 3: Sub-clustering (Custom Ontology + Context)
+  # =========================================================================
+  # Scenario: You have re-clustered T cells and need to distinguish subtypes.
+
+  t_ontology <- c("CD8 Naive", "CD8 Effector", "CD8 Exhausted", "Treg")
+
+  res_sub <- AutoCellType(
+    input = mock_markers, # Assume these are T cell sub-clusters
+    tissuename = "Human Liver",
+    prior_info = "Sub-clustering of CD3+ T cells.", # Inject context
+    cell_ontology = t_ontology, # Enforce specific names
+    model = "gpt-4o", # Better model for subtle differences
+    n_cores = 4
+  )
+}
 }
