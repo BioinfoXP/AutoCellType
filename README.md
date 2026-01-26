@@ -1,6 +1,6 @@
 # AutoCellType: 基于逻辑推理与多模态共识的单细胞智能注释框架
 
-**AutoCellType** 是一个专为单细胞转录组数据设计的自动化注释工具包。针对当前大语言模型（LLM）在生物信息学应用中存在的**幻觉（Hallucination）**、**上下文注意力稀释（Context Dilution）**以及**语义异质性（Semantic Heterogeneity）**问题，AutoCellType 提出了一套工程化解决方案。
+**AutoCellType** 是一个专为单细胞转录组数据设计的自动化注释工具包。针对当前大语言模型（LLM）在生物信息学应用中存在的**幻觉（Hallucination）、上下文注意力稀释（Context Dilution）以及语义异质性（Semantic Heterogeneity）**问题，AutoCellType 提出了一套工程化解决方案。
 
 本工具摒弃了传统的“批处理”模式，通过 **Single-Shot 并行架构**、**思维链（Chain-of-Thought, CoT）约束**以及**多模型仲裁机制**，实现了从 Marker 基因列表到细胞身份的高精度、可解释性推断。
 
