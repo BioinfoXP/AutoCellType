@@ -1,47 +1,47 @@
-# AutoCellType - 专家级单细胞多模态智能注释引擎 🧬
+# AutoCellType: 基于逻辑推理与多模态共识的单细胞智能注释框架
 
-**AutoCellType** 是一个为解决单细胞注释“可解释性”与“鲁棒性”而生的生产级工具包。
+**AutoCellType** 是一个专为单细胞转录组数据设计的自动化注释工具包。针对当前大语言模型（LLM）在生物信息学应用中存在的**幻觉（Hallucination）**、**上下文注意力稀释（Context Dilution）**以及**语义异质性（Semantic Heterogeneity）**问题，AutoCellType 提出了一套工程化解决方案。
 
-传统的 LLM 注释工具往往采用“批处理”模式（将所有 Cluster 塞进一个 Prompt），这导致了严重的**注意力稀释（Attention Dilution）和位置偏见（Lost-in-the-Middle）**。AutoCellType 重构了底层交互逻辑，通过 **Single-Shot 并行架构** 与 **Chain-of-Thought（思维链）** 协议，将 AI 从“模式匹配机器”升级为具备溯源能力的“生物学推理引擎”。
+本工具摒弃了传统的“批处理”模式，通过 **Single-Shot 并行架构**、**思维链（Chain-of-Thought, CoT）约束**以及**多模型仲裁机制**，实现了从 Marker 基因列表到细胞身份的高精度、可解释性推断。
 
 ---
 
-## 🧠 深度架构解析
+## 📐 核心架构与方法论
 
-### 1. 注意力隔离架构 (Attention Isolation Architecture) 🎯
+### 1. 独立上下文并行处理 (Isolated Context Parallelism)
 
-大模型在处理长文本时存在“注意力衰减”。当数十个细胞簇挤在一个请求中时，模型倾向于忽略中间的数据或产生幻觉。
+传统方法常将多个细胞簇拼接在单一 Prompt 中，导致模型受限于上下文窗口（Context Window）的注意力衰减，易产生漏标或错误关联。
 
-* **解决方案**：AutoCellType 强制执行 **Single-Shot 策略**。每个细胞簇都在独立的线程中运行，拥有完整的 Context Window。
-* **深度意义**：这不仅消除了“漏标”，更重要的是确保了模型对每个 Cluster 的 Marker 基因组进行**全权重（Full-Attention）**的扫描与分析，捕捉低表达但具有特异性的关键基因（如转录因子）。
+* **机制**：AutoCellType 采用 **Single-Shot Strategy**，为每一个 Cluster 分配独立的线程与推理上下文。
+* **优势**：确保模型对每个亚群的 Marker 特征（尤其是低表达的高特异性基因）具有完全的注意力权重，消除“位置偏见（Lost-in-the-middle）”。
 
-### 2. 溯源式逻辑推演 (Abductive Reasoning Protocol) 🔍
+### 2. 结构化思维链约束 (Structured Chain-of-Thought)
 
-我们拒绝“黑盒”式的标签输出。生物学结论必须建立在证据之上。
+仅依赖 Marker 匹配名称容易导致缺乏生物学依据的推断。
 
-* **强制结构化推理**：通过严格的 JSON Schema，强制 LLM 在给出 `primary_lineage` 之前，必须先填写 `reasoning` 字段。
-* **深度意义**：这迫使模型模拟生物学家的思维路径——先识别 Marker（如 *CD3D, CD8A*），再关联功能（*Cytotoxic*），最后推导结论（*CD8+ T cell*）。这种**“先思考，后回答”**的机制显著降低了幻觉率。
+* **机制**：引入强制性的 JSON Schema 约束，要求模型在输出 `primary_lineage` 前，必须先生成 `reasoning` 字段。模型需显式构建从基因表达（如 *CD3D+, CD8A+*）到功能状态（*Cytotoxic*）再到细胞身份的逻辑链路。
+* **优势**：将“黑盒”预测转化为可验证的生物学推理过程，显著降低幻觉率。
 
-### 3. 语义熵减仲裁 (Semantic Entropy Reduction) ⚖️
+### 3. 先验知识注入 (Context-Aware Inference)
 
-多模型的一致性不仅仅是字符串匹配。`T-cell` 和 `T lymphocyte` 是字符串冲突，却是生物学共识。
+细胞类型的定义高度依赖于组织微环境与实验背景。
 
-* **LLM 仲裁器**：引入高阶模型作为 Arbiter，在语义空间而非字符空间评估一致性。
-* **深度意义**：仲裁员不仅解决同义词问题，还能评估**证据信噪比**。当模型 A 基于高特异性 Marker 给出结论，而模型 B 基于泛 Marker 给出结论时，仲裁员会基于 `reasoning` 的质量进行加权裁决，而非简单的“少数服从多数”。
+* **机制**：通过 `prior_info` 参数支持多模态证据注入。用户可传入组织来源、流式分选背景、通路富集评分（GSEA/GO）或参考数据集（Reference-based）的初步预测结果。
+* **优势**：模型能够结合先验分布与观测数据（Marker）进行贝叶斯式的综合推断，解决同名异质（Heterogeneity）问题。
 
-### 4. 自愈式工程底座 (Self-Healing Infrastructure) 🛡️
+### 4. 语义对齐与仲裁 (Semantic Alignment & Arbitration)
 
-针对 LLM API 的不确定性，构建了容错层。
+不同模型（如 GPT-4o, DeepSeek）对同一细胞类型的命名习惯可能不同（如 *T lymphocyte* vs *T cell*），这并非生物学分歧。
 
-* **JSON 显微外科**：当 API 因 Token 限制截断输出时，内置解析器能识别破损的 JSON 结构（如未闭合的括号/引号）并自动进行语法修复，挽救宝贵的推理结果。
-* **智能熔断**：自动区分“瞬时网络波动”（执行指数退避重试）与“致命请求错误”（如 400 Bad Request，立即熔断），大幅提升大规模任务的执行效率。
+* **机制**：内置 **LLM Arbiter** 模块。仲裁器在语义空间而非字符空间评估一致性，能够合并同义词，并根据各模型的证据质量（Reasoning Quality）进行加权裁决。
+* **优势**：有效区分“命名差异”与“生物学冲突”，提供清洗后的高置信度共识结果。
 
 ---
 
 ## 📦 安装
 
 ```r
-# 1. 安装 OpenAI API 接口封装
+# 1. 安装 OpenAI API 接口封装 (R6 类支持)
 remotes::install_github("irudnyts/openai", ref = "r6")
 
 # 2. 安装 AutoCellType 核心包
@@ -51,40 +51,42 @@ devtools::install_github("BioinfoXP/AutoCellType")
 
 ---
 
-## 🚀 深度应用工作流
+## 💻 标准工作流
 
-### Phase 1: 注入先验知识的推理 (Informed Reasoning)
+### 环境配置
 
-不同于盲注，AutoCellType 允许你将实验背景（Context）注入推理过程。
+```r
+Sys.setenv(OPENAI_API_KEY = "sk-xxxxxxxx") 
+Sys.setenv(OPENAI_API_BASE_URL = "https://api.gpt.ge/v1")
+
+```
+
+### 场景一：高精度单模型注释
+
+适用于对注释深度和可解释性有较高要求的常规分析。
 
 ```r
 library(AutoCellType)
 
-# 配置环境
-Sys.setenv(OPENAI_API_KEY = "sk-...", OPENAI_API_BASE_URL = "https://api.gpt.ge/v1")
-
-# 运行推理引擎
-# prior_info 是提升准确率的关键：它为模型划定了推理的边界条件
+# 启动推理引擎
+# n_cores: 控制并发度，实现高吞吐量处理
 res <- AutoCellType(
-    input = degs_df, 
-    tissuename = "人肝癌微环境 (HCC)",
-    
-    # [深度技巧]：注入上游分析线索
-    prior_info = "该数据来自 CD45+ 免疫细胞分选；SingleR 初步提示包含大量髓系细胞；请重点区分肿瘤相关巨噬细胞 (TAM) 的亚型。",
-    
-    n_cores = 8,          # 算力换时间：8线程并行
-    model = "gpt-4o-mini" # 高效推理模型
+    input = degs_df,                # Seurat FindAllMarkers 输出
+    tissuename = "人肝癌微环境 (HCC)", 
+    prior_info = "样本来源于 CD45+ 免疫细胞分选；需重点区分 TAM 亚型", 
+    n_cores = 8,                    
+    model = "gpt-4o-mini"           
 )
 
 ```
 
-### Phase 2: 多视角的对抗与共识 (Adversarial Consensus)
+### 场景二：多模型集成与共识仲裁
 
-利用不同模型的训练偏差进行交叉验证，并通过仲裁器收敛结论。
+适用于复杂组织或存在争议的亚群定义，利用模型间的异质性进行交叉验证。
 
 ```r
-# 1. 引入"第二意见" (Second Opinion)
-# 使用 deepseek-chat 作为对比模型，利用其不同的训练语料库
+# 1. 多模型并行推理 (Ensemble Inference)
+# 获取不同训练背景下的模型观点
 res_multi <- RunMultipleAnnotations(
     input = degs_df,
     models = c("gpt-4o-mini", "deepseek-chat"),
@@ -92,9 +94,9 @@ res_multi <- RunMultipleAnnotations(
     n_cores = 4
 )
 
-# 2. 启动仲裁庭 (The Tribunal)
-# 使用推理能力最强的 gpt-4o 作为法官，审阅上述模型的证据链
-final_consensus <- AssessModelConsensus(
+# 2. 语义仲裁与冲突消解 (Arbitration)
+# 评估一致性，生成最终共识报告
+final_report <- AssessModelConsensus(
     res_multi, 
     arbiter_model = "gpt-4o"
 )
@@ -103,25 +105,34 @@ final_consensus <- AssessModelConsensus(
 
 ---
 
-## 📊 结果解读：从数据到洞察
+## 📊 结果指标解读
 
-`AssessModelConsensus` 输出的不仅是结果，更是一份**质量诊断报告**。
+`AssessModelConsensus` 提供定量化的置信度评估指标：
 
-| 状态 (Status) | 深度解读 | 建议操作 |
+| 状态 (Status) | 技术解读 | 处理建议 |
 | --- | --- | --- |
-| **Perfect Consensus** | **全息一致**。所有模型在语义和证据上均达成共识。 | ✅ 直接采信，无需复核。 |
-| **Arbiter Adjusted** | **语义对齐**。模型间存在命名习惯差异（如 *NK cells* vs *Natural Killer cells*），仲裁员已将其统一。 | ✅ 采信仲裁结果。 |
-| **Lineage Conflict** | **谱系冲突**。模型 A 认为是上皮，模型 B 认为是基质。通常暗示该簇包含双克隆（Doublets）或低质量细胞。 | ⚠️ 需回溯原始数据检查 QC 指标。 |
-| **Subtype Ambiguity** | **亚型模糊**。大类一致，但对功能状态（如 *Exhausted* vs *Activated*）有分歧。这反映了生物学状态的连续性。 | 🔬 建议关注 `reasoning` 列中的通路证据。 |
+| **Perfect Consensus** | **语义一致**。所有模型在 Lineage 和 Subtype 层面均达成共识，且证据链完整。 | ✅ 采信 |
+| **Arbiter Adjusted** | **语义归一化**。仲裁器识别并统一了不同模型的同义词命名（Synonym Resolution），或基于更强证据修正了次优结论。 | ✅ 采信仲裁结果 |
+| **High Conflict** | **生物学冲突**。模型间存在谱系级（Lineage-level）分歧，通常提示该簇可能为 Doublets、低质量细胞或过渡态细胞。 | ⚠️ 需人工核查原始表达谱 |
 
 ---
 
-## 📧 社区与支持
+## 🛡️ 工程鲁棒性设计
 
-AutoCellType 致力于将**可解释 AI (XAI)** 引入单细胞分析领域。
+AutoCellType 在设计时充分考虑了 API 的不稳定性与数据格式的复杂性：
 
-* **GitHub**: [BioinfoXP/AutoCellType](https://github.com/BioinfoXP/AutoCellType)
+1. **致命错误熔断**：自动识别 HTTP 400 等不可恢复错误，立即终止并报告，避免无效的指数退避重试。
+2. **结构化数据修复**：内置 JSON 语法修复器，自动处理因 Token 上限导致的截断（Premature EOF），保障数据完整性。
+3. **类型安全保障**：严格处理 R 语言中 Cluster ID 的数值/字符类型转换，确保输入输出的一一对应。
+
+---
+
+## 📧 社区与反馈
+
+如果您在单细胞研究中遇到特殊的注释难题，或有关于算法改进的建议，欢迎通过以下渠道联系：
+
+* **GitHub Issues**: [BioinfoXP/AutoCellType](https://github.com/BioinfoXP/AutoCellType)
 * **Email**: xp294053@163.com
-* **公众号**: 桑树下的胖蚕宝
+* **WeChat Official**: 桑树下的胖蚕宝
 
-*“In God we trust, all others must bring data (and reasoning).”*
+*AutoCellType 致力于通过计算工程学方法，提升 LLM 在生物医学领域的推理可靠性。*
