@@ -61,12 +61,6 @@ A \code{tibble} containing standardized columns: \code{cluster_id}, \code{primar
 }
 \description{
 A high-precision, parallelized single-cell annotation engine.
-
-**Critical Updates (v7.2)**:
-1. **Single-Shot Strategy**: Processes clusters strictly one-by-one. Eliminates "Model Laziness" (skipping clusters).
-2. **Smart Error Handling**: Instantly catches fatal errors (HTTP 400/Model Not Found) to stop useless retries.
-3. **JSON Auto-Repair**: Fixes "Premature EOF" by automatically closing broken JSON strings.
-4. **Zero-NA Guarantee**: Strictly enforces no NA values in subtypes by filling with lineage info.
 }
 \examples{
 \dontrun{

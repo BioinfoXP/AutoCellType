@@ -6,12 +6,6 @@
 #' @description
 #' A high-precision, parallelized single-cell annotation engine.
 #'
-#' **Critical Updates (v7.2)**:
-#' 1. **Single-Shot Strategy**: Processes clusters strictly one-by-one. Eliminates "Model Laziness" (skipping clusters).
-#' 2. **Smart Error Handling**: Instantly catches fatal errors (HTTP 400/Model Not Found) to stop useless retries.
-#' 3. **JSON Auto-Repair**: Fixes "Premature EOF" by automatically closing broken JSON strings.
-#' 4. **Zero-NA Guarantee**: Strictly enforces no NA values in subtypes by filling with lineage info.
-#'
 #' @param input **Required**. The input marker data. Supports two formats:
 #'   \itemize{
 #'     \item \strong{Data Frame}: Output from Seurat's \code{FindAllMarkers()}. Must contain \code{cluster} and \code{gene} (or rownames) columns, plus \code{avg_log2FC} (or \code{avg_logFC}).
