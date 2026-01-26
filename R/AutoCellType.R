@@ -311,7 +311,7 @@ AutoCellType <- function(
     sys_prompt <- make_system_prompt()
     cluster_ids <- names(markers_vec)
 
-    if (verbose) message(glue::glue("=== AutoCellType v7.2 ({model}) | {length(cluster_ids)} Clusters | Cores: {n_cores} ==="))
+    if (verbose) message(glue::glue("=== AutoCellType ({model}) | {length(cluster_ids)} Clusters | Cores: {n_cores} ==="))
 
     worker <- function(cid) run_single_cluster(cid, markers_vec[cid], client, sys_prompt, retries)
 
